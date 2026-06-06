@@ -1,22 +1,15 @@
 pipeline {
   agent any
-
   // Force Maven stages to use Java 17
   environment {
     JAVA_HOME = "/usr/lib/jvm/java-17-openjdk-amd64"
     PATH = "${JAVA_HOME}/bin:${env.PATH}"
   }
-  
   stages {
     stage('Cleanup') {
       steps {
         // Wipe the workspace to avoid permission issues
         cleanWs()
-      }
-    }
-    stage('Verify Workspace') {
-      steps {
-        sh 'ls -R'
       }
     }
     stage('Checkout') {
@@ -25,7 +18,11 @@ pipeline {
         // git branch: 'main', url: 'https://github.com/omsairam-1994/Java-Jenkins-Project.git'
       }
     }
-
+    stage('Verify Workspace') {
+      steps {
+        sh 'ls -R'
+      }
+    }
     stage('Build and Test') {
       steps {
         sh '''
