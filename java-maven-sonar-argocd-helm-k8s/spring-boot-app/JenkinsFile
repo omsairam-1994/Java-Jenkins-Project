@@ -6,11 +6,7 @@ pipeline {
     JAVA_HOME = "/usr/lib/jvm/java-17-openjdk-amd64"
     PATH = "${JAVA_HOME}/bin:${env.PATH}"
   }
-  stage('Verify Workspace') {
-  steps {
-    sh 'ls -R'
-   }
-  }
+  
   stages {
     stage('Cleanup') {
       steps {
@@ -18,7 +14,11 @@ pipeline {
         cleanWs()
       }
     }
-
+    stage('Verify Workspace') {
+      steps {
+        sh 'ls -R'
+      }
+    }
     stage('Checkout') {
       steps {
         sh 'echo passed'
