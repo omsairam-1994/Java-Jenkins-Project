@@ -10,6 +10,7 @@ pipeline {
   environment {
     JAVA_HOME = "/usr/lib/jvm/java-17-openjdk-amd64"
     PATH = "${JAVA_HOME}/bin:${env.PATH}"
+    DOCKER_IMAGE = "punnarao/java-project-pipeline:${BUILD_NUMBER}"
   }
 
   stages {
