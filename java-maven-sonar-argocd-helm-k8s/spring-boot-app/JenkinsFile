@@ -1,10 +1,12 @@
 pipeline {
   agent any
+
   // Force Maven stages to use Java 17
   environment {
     JAVA_HOME = "/usr/lib/jvm/java-17-openjdk-amd64"
     PATH = "${JAVA_HOME}/bin:${env.PATH}"
   }
+
   stages {
     stage('Cleanup') {
       steps {
@@ -12,21 +14,26 @@ pipeline {
         cleanWs()
       }
     }
+
     stage('Checkout') {
       steps {
-        sh 'echo passed'
-        // git branch: 'main', url: 'https://github.com/omsairam-1994/Java-Jenkins-Project.git'
+        // Explicit checkout to ensure repo is present after cleanup
+        git branch: 'main', url: 'https://github.com/omsairam-1994/Java-Jenkins-Project.git'
       }
     }
+
     stage('Verify Workspace') {
       steps {
+        // Debugging: list repo structure
         sh 'ls -R'
       }
     }
+
     stage('Build and Test') {
       steps {
+        // Adjust path if pom.xml is at root
         sh '''
-          cd java-maven-sonar-argocd-helm-k8s/spring-boot-app
+          cd java-maven-sonar-argocd-helm-k8s/spring-boot-app || exit 1
           mvn clean package
         '''
       }
@@ -46,7 +53,7 @@ pipeline {
           if (sonarReachable) {
             withCredentials([string(credentialsId: 'sonarqube', variable: 'SONAR_AUTH_TOKEN')]) {
               sh '''
-                cd java-maven-sonar-argocd-helm-k8s/spring-boot-app
+                cd java-maven-sonar-argocd-helm-k8s/spring-boot-app || exit 1
                 mvn sonar:sonar -Dsonar.login=$SONAR_AUTH_TOKEN -Dsonar.host.url=${SONAR_URL}
               '''
             }
@@ -65,7 +72,7 @@ pipeline {
       steps {
         script {
           sh '''
-            cd java-maven-sonar-argocd-helm-k8s/spring-boot-app
+            cd java-maven-sonar-argocd-helm-k8s/spring-boot-app || exit 1
             docker build -t ${DOCKER_IMAGE} .
           '''
           def dockerImage = docker.image("${DOCKER_IMAGE}")
