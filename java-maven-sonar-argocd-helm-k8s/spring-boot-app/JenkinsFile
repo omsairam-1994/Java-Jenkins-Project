@@ -36,7 +36,7 @@ pipeline {
         expression { params.RUN_MODE == 'ALL' || currentBuild.result == 'FAILURE' }
       }
       steps {
-        sh 'gitleaks detect --source . --no-banner --exit-code 1'
+        sh '/usr/local/bin/gitleaks detect --source . --no-banner --exit-code 1'
       }
     }
 
@@ -107,7 +107,7 @@ pipeline {
         expression { params.RUN_MODE == 'ALL' || currentBuild.result == 'FAILURE' }
       }
       steps {
-        sh "trivy image ${DOCKER_IMAGE} --exit-code 1 --severity HIGH,CRITICAL"
+        sh "/usr/bin/trivy image ${DOCKER_IMAGE} --exit-code 1 --severity HIGH,CRITICAL"
       }
     }
 
