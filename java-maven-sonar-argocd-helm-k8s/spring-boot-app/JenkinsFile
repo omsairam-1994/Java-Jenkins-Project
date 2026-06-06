@@ -1,7 +1,12 @@
 pipeline {
   agent any
-
-  // Force Maven stages to use Java 17
+  parameters {
+    choice(
+      name: 'RUN_MODE',
+      choices: ['ALL', 'FAILED_ONLY'],
+      description: 'Choose whether to run all stages or only rerun failed ones'
+    )
+  }
   environment {
     JAVA_HOME = "/usr/lib/jvm/java-17-openjdk-amd64"
     PATH = "${JAVA_HOME}/bin:${env.PATH}"
@@ -9,29 +14,37 @@ pipeline {
 
   stages {
     stage('Cleanup') {
+      when {
+        expression { params.RUN_MODE == 'ALL' || currentBuild.result == 'FAILURE' }
+      }
       steps {
-        // Wipe the workspace to avoid permission issues
         cleanWs()
       }
     }
 
     stage('Checkout') {
+      when {
+        expression { params.RUN_MODE == 'ALL' || currentBuild.result == 'FAILURE' }
+      }
       steps {
-        // Explicit checkout to ensure repo is present after cleanup
         git branch: 'main', url: 'https://github.com/omsairam-1994/Java-Jenkins-Project.git'
       }
     }
 
-    stage('Verify Workspace') {
+    stage('GitLeaks Scan') {
+      when {
+        expression { params.RUN_MODE == 'ALL' || currentBuild.result == 'FAILURE' }
+      }
       steps {
-        // Debugging: list repo structure
-        sh 'ls -R'
+        sh 'gitleaks detect --source . --no-banner --exit-code 1'
       }
     }
 
     stage('Build and Test') {
+      when {
+        expression { params.RUN_MODE == 'ALL' || currentBuild.result == 'FAILURE' }
+      }
       steps {
-        // Adjust path if pom.xml is at root
         sh '''
           cd java-maven-sonar-argocd-helm-k8s/spring-boot-app || exit 1
           mvn clean package
@@ -40,6 +53,9 @@ pipeline {
     }
 
     stage('Static Code Analysis') {
+      when {
+        expression { params.RUN_MODE == 'ALL' || currentBuild.result == 'FAILURE' }
+      }
       environment {
         SONAR_URL = "http://192.168.56.1:9000"
       }
@@ -65,6 +81,9 @@ pipeline {
     }
 
     stage('Build and Push Docker Image') {
+      when {
+        expression { params.RUN_MODE == 'ALL' || currentBuild.result == 'FAILURE' }
+      }
       environment {
         DOCKER_IMAGE = "punnarao/java-project-pipeline:${BUILD_NUMBER}"
         REGISTRY_CREDENTIALS = credentials('docker-cred')
@@ -83,7 +102,19 @@ pipeline {
       }
     }
 
+    stage('Trivy Scan') {
+      when {
+        expression { params.RUN_MODE == 'ALL' || currentBuild.result == 'FAILURE' }
+      }
+      steps {
+        sh "trivy image ${DOCKER_IMAGE} --exit-code 1 --severity HIGH,CRITICAL"
+      }
+    }
+
     stage('Update Deployment File') {
+      when {
+        expression { params.RUN_MODE == 'ALL' || currentBuild.result == 'FAILURE' }
+      }
       environment {
         GIT_REPO_NAME = "Java-Jenkins-Project"
         GIT_USER_NAME = "omsairam-1994"
