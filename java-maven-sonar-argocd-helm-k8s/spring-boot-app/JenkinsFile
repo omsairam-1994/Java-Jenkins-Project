@@ -23,9 +23,6 @@ pipeline {
     }
 
     stage('Checkout') {
-      when {
-        expression { params.RUN_MODE == 'ALL' || currentBuild.result == 'FAILURE' }
-      }
       steps {
         git branch: 'main', url: 'https://github.com/omsairam-1994/Java-Jenkins-Project.git'
       }
