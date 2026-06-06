@@ -99,16 +99,23 @@ pipeline {
         }
       }
     }
-
-    stage('Trivy Scan') {
+    stage('Trivy DB Update') {
       when {
         expression { params.RUN_MODE == 'ALL' || currentBuild.result == 'FAILURE' }
-      }
+        }
       steps {
-        sh "/usr/bin/trivy image ${DOCKER_IMAGE} --exit-code 1 --severity HIGH,CRITICAL"
-      }
+          sh '/usr/bin/trivy --download-db-only'
+       }
     }
-
+    stage('Trivy Scan') {
+       when {
+        expression { params.RUN_MODE == 'ALL' || currentBuild.result == 'FAILURE' }
+        }
+       steps {
+          sh "/usr/bin/trivy image ${DOCKER_IMAGE} --timeout 10m --skip-db-update --exit-code 1 --severity HIGH,CRITICAL"
+        }
+     }
+   
     stage('Update Deployment File') {
       when {
         expression { params.RUN_MODE == 'ALL' || currentBuild.result == 'FAILURE' }
